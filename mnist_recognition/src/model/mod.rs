@@ -229,9 +229,9 @@ impl Model {
             let max_index = -1.0;
             let max_value = -1.0;
             for j in 0..self.output_layer.nrows() {
-                if self.output_layer[[i, j]] > max_value {
+                if self.output_layer[[j, i]] > max_value {
                     let max_index = j;
-                    let max_value = self.output_layer[[i, j]];
+                    let max_value = self.output_layer[[j, i]];
                 }
             }
             out[[0, i]] = max_index;
