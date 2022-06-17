@@ -26,28 +26,44 @@ impl Dataset {
         }
     }
 
+    fn dist(labels: &Array2<f64>, dataset_annotation: &str) {
+        let mut distribution = Array2::<f64>::zeros((10,1));
+        let mut sum = 0.;
+        println!("{}", dataset_annotation);
+
+        for item in labels.iter() {
+            distribution[[*item as usize, 0]] += 1.; 
+            sum += 1.;
+        }
+
+        for ((i,_), value) in distribution.indexed_iter() {
+            println!("Digit {}: {}", i, value);
+        }
+    }
+
     pub fn new() -> Dataset {
-        let Mnist {
+        let NormalizedMnist {
             trn_img,
             trn_lbl,
             tst_img,
             tst_lbl,
             ..
-        }: Mnist = MnistBuilder::new()
+        }: NormalizedMnist = MnistBuilder::new()
             .label_format_digit()
-            .training_set_length(50_000)
-            .validation_set_length(10_000)
+            .training_set_length(60_000)
+            .validation_set_length(0)
             .test_set_length(10_000)
-            .finalize();
+            .finalize()
+            .normalize();
 
         // Create
-        let mut training_data: Array2<f64> = Array2::from_shape_vec((50_000, 784), trn_img)
+        let mut training_data: Array2<f64> = Array2::from_shape_vec((60_000, 784), trn_img)
             .expect("Error converting images to Array3 struct")
             .t()
-            .map(|x| *x as f64 / 256.0);
+            .map(|x| *x as f64 );
 
         // Convert the returned Mnist struct to Array2 format
-        let mut training_labels: Array2<f64> = Array2::from_shape_vec((50_000, 1), trn_lbl)
+        let mut training_labels: Array2<f64> = Array2::from_shape_vec((60_000, 1), trn_lbl)
             .expect("Error converting training labels to Array2 struct")
             .t()
             .map(|x| *x as f64);
@@ -55,16 +71,22 @@ impl Dataset {
         let mut testing_data: Array2<f64> = Array2::from_shape_vec((10_000, 784), tst_img)
             .expect("Error converting images to Array3 struct")
             .t()
-            .map(|x| *x as f64 / 256.);
+            .map(|x| *x as f64);
 
         let mut testing_labels: Array2<f64> = Array2::from_shape_vec((10_000, 1), tst_lbl)
             .expect("Error converting testing labels to Array2 struct")
             .t()
             .map(|x| *x as f64);
 
+        Dataset::dist(&training_labels, "training pre shuffle");
+        Dataset::dist(&testing_labels, "testing pre shuffle");
+
+
         Dataset::shuffle(&mut [&mut training_data, &mut training_labels]);
         Dataset::shuffle(&mut [&mut testing_data, &mut testing_labels]);
 
+        Dataset::dist(&training_labels, "training shuffled");
+        Dataset::dist(&testing_labels, "testing shuffled");
         Dataset {
             training_data: training_data,
             training_labels: training_labels,
