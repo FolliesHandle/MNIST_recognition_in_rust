@@ -1,13 +1,10 @@
 mod dataset;
-use std::{ops::Sub};
+use std::ops::Sub;
 
-use rand::Rng;
+use rand::{Rng, distributions::Uniform, prelude::Distribution};
 
 use crate::model::dataset::Dataset;
-use ndarray::{
-    prelude::{Array2},
-    Axis, Array1,
-};
+use ndarray::{prelude::Array2, Axis, Array, Zip};
 
 pub struct Model {
     hidden_layer_weights: Array2<f64>,
@@ -30,25 +27,25 @@ impl Model {
     //          - Hidden Layer: weights, biases, nodes
     //          - Output Layer: weights, biases, nodes
     pub fn new() -> Model {
+        let rand_range = Uniform::from(-0.5..=0.5);
         let mut rng = rand::thread_rng();
         let dataset = Dataset::new();
         let hidden_layer_weights: Array2<f64> =
-            Array2::from_shape_simple_fn((10, 784), || rng.gen::<f64>() - 0.5f64);
+            Array2::from_shape_simple_fn((10, 784), || rand_range.sample(&mut rng));
         let hidden_layer_biases: Array2<f64> =
-            Array2::from_shape_simple_fn((10, 1), || rng.gen::<f64>() - 0.5f64);
+            Array2::from_shape_simple_fn((10, 1), || rand_range.sample(&mut rng));
 
         let output_layer_weights: Array2<f64> =
-            Array2::from_shape_simple_fn((10, 10), || rng.gen::<f64>() - 0.5f64);
+            Array2::from_shape_simple_fn((10, 10), || rand_range.sample(&mut rng));
         let output_layer_biases: Array2<f64> =
-            Array2::from_shape_simple_fn((10, 1), || rng.gen::<f64>() - 0.5f64);
+            Array2::from_shape_simple_fn((10, 1), || rand_range.sample(&mut rng));
 
         let hidden_layer_preactivation: Array2<f64> =
-            &hidden_layer_weights.dot(&dataset.training_data) + &hidden_layer_biases;
-        let hidden_layer: Array2<f64> = Model::relu(&hidden_layer_preactivation);
+            Array2::zeros((10, dataset.training_labels.ncols()));
+        let hidden_layer: Array2<f64> = Array2::zeros((10, dataset.training_labels.ncols()));
 
-        let output_layer_preactivation =
-            &output_layer_weights.dot(&hidden_layer) + &output_layer_biases;
-        let output_layer = Model::softmax(&output_layer_preactivation);
+        let output_layer_preactivation = Array2::zeros((10, dataset.training_labels.ncols()));
+        let output_layer = Array2::zeros((10, dataset.training_labels.ncols()));
 
         Model {
             hidden_layer_weights: hidden_layer_weights,
@@ -66,11 +63,11 @@ impl Model {
     // Simple function to facilitate relu activation
     // Arguments: nm: f64 -> number to compare to zero
     // Returns: nm if nm > 0.0, else 0.0
-    fn greater_than_zero(nm: f64) -> f64 {
+    fn relu_single(nm: f64) -> f64 {
         if nm > 0.0 {
             return nm;
         }
-        0.0
+        0.1 * nm
     }
 
     // ReLU Activation Function
@@ -79,7 +76,7 @@ impl Model {
     fn relu(preactivation_layer: &Array2<f64>) -> Array2<f64> {
         let mut out = Array2::<f64>::zeros(preactivation_layer.raw_dim());
         for ((i, j), ele) in preactivation_layer.indexed_iter() {
-            out[[i, j]] = Model::greater_than_zero(*ele);
+            out[[i, j]] = Model::relu_single(*ele);
         }
         out
     }
@@ -111,11 +108,11 @@ impl Model {
         out
     }
 
-    fn check_nan(mat: &Array2<f64>) {
-        for item in mat.iter() {
-            assert!(item.is_finite());
-        }
-    }
+    // fn check_nan(mat: &Array2<f64>) {
+    //     for item in mat.iter() {
+    //         assert!(item.is_finite());
+    //     }
+    // }
 
     // Forward Propogation function for inference/training
     // Modifies variables in place
@@ -123,20 +120,16 @@ impl Model {
         // hidden layer => weights * nodes in input layer + biases
         self.hidden_layer_preactivation =
             &self.hidden_layer_weights.dot(&self.dataset.training_data) + &self.hidden_layer_biases;
-        Model::check_nan(&self.hidden_layer_preactivation);
 
         // activate hidden layer with ReLU activation
         self.hidden_layer = Model::relu(&self.hidden_layer_preactivation);
-        Model::check_nan(&self.hidden_layer);
 
         // output layer => weights * nodes in hidden layer + biases
         self.output_layer_preactivation =
             &self.output_layer_weights.dot(&self.hidden_layer) + &self.output_layer_biases;
-        Model::check_nan(&self.output_layer_preactivation);
 
         // activate output layer with softmax activation
         self.output_layer = Model::softmax(&self.output_layer_preactivation);
-        Model::check_nan(&self.output_layer);
     }
 
     // Creates a one hot array of the output for use in backwards propogation
@@ -148,22 +141,24 @@ impl Model {
     fn calc_output_one_hot(&mut self) -> Array2<f64> {
         let mut output_one_hot = Array2::<f64>::zeros((10, self.dataset.training_labels.ncols()));
         for ((_, j), value) in self.dataset.training_labels.indexed_iter() {
-                output_one_hot[[*value as usize, j]] = 1f64;
+            output_one_hot[[*value as usize, j]] = 1f64;
         }
-        output_one_hot.t();
         output_one_hot
     }
 
     // Derivative of ReLU activation function above
     // Arguments: relu_layer: &Array32<f64> -> layer that underwent ReLU activation in forward_prop
     // Returns: Array of 1s and 0s, 1s in place of positive values after activation
-    fn derivate_relu(relu_layer: &Array2<f64>, output_layer: &mut Array2<f64>) -> Array2<f64> {
+    fn derivate_relu(relu_layer: &Array2<f64>) -> Array2<f64> {
+        let mut output_layer = Array2::<f64>::zeros(relu_layer.raw_dim());
         for ((i, j), item) in relu_layer.indexed_iter() {
-            if item <= &0.0 {
-                output_layer[[i, j]] = 0.0;
+            if item > &0.0 {
+                output_layer[[i, j]] = 1.0;
+            } else {
+                output_layer[[i, j]] = 0.1;
             }
         }
-        output_layer.clone()
+        output_layer
     }
 
     // Backwards propogation of correct labels
@@ -172,36 +167,32 @@ impl Model {
         let size = self.output_layer.len_of(Axis(1)) as f64;
         let one_hot_hidden = self.calc_output_one_hot();
 
-        let output_derivative_preactivation = &self.hidden_layer - &one_hot_hidden;
-        Model::check_nan(&output_derivative_preactivation);
+        let output_derivative_preactivation = &self.output_layer - &one_hot_hidden;
+
         let output_derivative_weights = &output_derivative_preactivation
-            .dot(&self.output_layer.t())
+            .dot(&self.hidden_layer.t())
             .map(|x| x * 1. / size);
 
-        Model::check_nan(output_derivative_weights);
         let output_derivative_biases = &output_derivative_preactivation
             .sum_axis(Axis(1))
             .map(|x| x * 1. / size)
             .insert_axis(Axis(1));
 
-        Model::check_nan(output_derivative_biases);
-        let hidden_derivative_preactivation = &Model::derivate_relu(
-            &self.hidden_layer_preactivation,
-            &mut self
-                .output_layer_weights
-                .t()
-                .dot(&output_derivative_preactivation),
+        let hidden_derivative_preactivation = &self
+        .output_layer_weights
+        .t()
+        .dot(&output_derivative_preactivation) *  &Model::derivate_relu(
+            &self.hidden_layer_preactivation
         );
-        Model::check_nan(&hidden_derivative_preactivation);
+
         let hidden_derivative_weights = &hidden_derivative_preactivation
             .dot(&self.dataset.training_data.t())
             .map(|x| x * 1. / size);
-        Model::check_nan(hidden_derivative_weights);
+
         let hidden_derivative_biases = &hidden_derivative_preactivation
             .sum_axis(Axis(1))
             .map(|x| x * 1. / size)
             .insert_axis(Axis(1));
-        Model::check_nan(hidden_derivative_biases);
 
         self.update_params(
             output_derivative_weights,
@@ -212,6 +203,33 @@ impl Model {
         )
     }
 
+    // fn update_params(
+    //     &mut self,
+    //     output_derivative_weights: &Array2<f64>,
+    //     output_derivative_biases: &Array2<f64>,
+    //     hidden_derivative_weights: &Array2<f64>,
+    //     hidden_derivative_biases: &Array2<f64>,
+    //     learning_rate: f64,
+    // ) {
+    //     self.hidden_layer_weights = self
+    //         .hidden_layer_weights
+    //         .clone()
+    //         .sub(&hidden_derivative_weights.map(|x| x * learning_rate));
+    //     self.hidden_layer_biases = self
+    //         .hidden_layer_biases
+    //         .clone()
+    //         .sub(&hidden_derivative_biases.map(|x| x * learning_rate));
+
+    //     self.output_layer_weights = self
+    //         .output_layer_weights
+    //         .clone()
+    //         .sub(&output_derivative_weights.map(|x| x * learning_rate));
+    //     self.output_layer_biases = self
+    //         .output_layer_biases
+    //         .clone()
+    //         .sub(&output_derivative_biases.map(|x| x * learning_rate));
+    // }
+
     fn update_params(
         &mut self,
         output_derivative_weights: &Array2<f64>,
@@ -220,23 +238,10 @@ impl Model {
         hidden_derivative_biases: &Array2<f64>,
         learning_rate: f64,
     ) {
-        self.hidden_layer_weights = self
-            .hidden_layer_weights
-            .clone()
-            .sub(&hidden_derivative_weights.map(|x| x * learning_rate));
-        self.hidden_layer_biases = self
-            .hidden_layer_biases
-            .clone()
-            .sub(&hidden_derivative_biases.map(|x| x * learning_rate));
-
-        self.output_layer_weights = self
-            .output_layer_weights
-            .clone()
-            .sub(&output_derivative_weights.map(|x| x * learning_rate));
-        self.output_layer_biases = self
-            .output_layer_biases
-            .clone()
-            .sub(&output_derivative_biases.map(|x| x * learning_rate));
+        Zip::from(&mut self.hidden_layer_weights).and(hidden_derivative_weights).apply(|a, b| *a -= learning_rate*b);
+        Zip::from(&mut self.hidden_layer_biases).and(hidden_derivative_biases).apply(|a, b| *a -= learning_rate*b);
+        Zip::from(&mut self.output_layer_weights).and(output_derivative_weights).apply(|a, b| *a -= learning_rate*b);
+        Zip::from(&mut self.output_layer_biases).and(output_derivative_biases).apply(|a, b| *a -= learning_rate*b);
     }
 
     fn get_predictions(&self) -> Array2<f64> {
@@ -262,17 +267,25 @@ impl Model {
         for ((i, j), item) in predictions.indexed_iter() {
             if item == &ground_truth[[i, j]] {
                 sum += 1.0;
-                label_accuracy[[ground_truth[[i,j]] as usize, 0]] += 1;
+                label_accuracy[[ground_truth[[i, j]] as usize, 0]] += 1;
             }
-            label_accuracy[[ground_truth[[i,j]] as usize, 1]] += 1;
+            label_accuracy[[ground_truth[[i, j]] as usize, 1]] += 1;
         }
         let dataset_size: f64 = predictions.ncols() as f64;
 
         let mut i = 0;
+        println!("-----------------------------");
         for item in label_accuracy.axis_iter(Axis(0)) {
-            println!("Digit {}: {} out of {}, {}", i, item[0], item[1], item[0] as f64/item[1] as f64);
+            println!(
+                "Digit {}: {} out of {}, {}",
+                i,
+                item[0],
+                item[1],
+                item[0] as f64 / item[1] as f64
+            );
             i += 1;
         }
+        println!("-----------------------------");
         return sum / dataset_size;
     }
 
@@ -281,6 +294,7 @@ impl Model {
             self.forward_prop();
             self.backward_prop(learning_rate);
             if i % 10 == 0 {
+                println!("\n\n-----------------------------");
                 println!("Total Iterations: {}", i);
                 println!(
                     "Accuracy: {}",

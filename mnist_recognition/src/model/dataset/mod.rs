@@ -1,6 +1,6 @@
 use mnist::*;
 use ndarray::Array2;
-use rand::Rng;
+use rand::{Rng, distributions::Uniform, prelude::Distribution};
 pub struct Dataset {
     // 2D array of flattened images from MNIST dataset, shuffled
     pub training_data: Array2<f64>,
@@ -10,13 +10,15 @@ pub struct Dataset {
 }
 
 impl Dataset {
+
     fn shuffle(slices: &mut [&mut Array2<f64>]) {
         if slices.len() > 0 {
             let mut rng = rand::thread_rng();
+            
             let shared_length = slices[0].index_axis_mut(ndarray::Axis(0), 0).len();
 
             for i in 0..shared_length {
-                let next = rng.gen_range(i..shared_length);
+                let next = Uniform::from(i..shared_length).sample(&mut rng);
 
                 for slice in slices.iter_mut() {
                     let mut row = slice.index_axis_mut(ndarray::Axis(0), 0);
@@ -28,12 +30,11 @@ impl Dataset {
 
     fn dist(labels: &Array2<f64>, dataset_annotation: &str) {
         let mut distribution = Array2::<f64>::zeros((10,1));
-        let mut sum = 0.;
+        println!("\n\n-----------------------------");
         println!("{}", dataset_annotation);
 
         for item in labels.iter() {
             distribution[[*item as usize, 0]] += 1.; 
-            sum += 1.;
         }
 
         for ((i,_), value) in distribution.indexed_iter() {
