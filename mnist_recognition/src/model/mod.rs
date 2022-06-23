@@ -199,6 +199,33 @@ impl Model {
         )
     }
 
+    // fn update_params(
+    //     &mut self,
+    //     output_derivative_weights: &Array2<f64>,
+    //     output_derivative_biases: &Array2<f64>,
+    //     hidden_derivative_weights: &Array2<f64>,
+    //     hidden_derivative_biases: &Array2<f64>,
+    //     learning_rate: f64,
+    // ) {
+    //     self.hidden_layer_weights = self
+    //         .hidden_layer_weights
+    //         .clone()
+    //         .sub(&hidden_derivative_weights.map(|x| x * learning_rate));
+    //     self.hidden_layer_biases = self
+    //         .hidden_layer_biases
+    //         .clone()
+    //         .sub(&hidden_derivative_biases.map(|x| x * learning_rate));
+
+    //     self.output_layer_weights = self
+    //         .output_layer_weights
+    //         .clone()
+    //         .sub(&output_derivative_weights.map(|x| x * learning_rate));
+    //     self.output_layer_biases = self
+    //         .output_layer_biases
+    //         .clone()
+    //         .sub(&output_derivative_biases.map(|x| x * learning_rate));
+    // }
+
     fn update_params(
         &mut self,
         output_derivative_weights: &Array2<f64>,
