@@ -3,12 +3,12 @@
 use ndarray::{prelude::Array2};
 use super::layer::{Layer, ActivationLayer};
 pub struct ReLU {
-    layer: Layer,
+    pub layer: Layer,
     relu_coefficient: f64,
 }
 
 impl ReLU {
-    fn new(
+    pub fn new(
         input: usize,
         nodes: usize,
         samples: usize,
@@ -44,6 +44,6 @@ impl ActivationLayer for ReLU {
         }
     }
     fn deactivate(&mut self, previous_layer: &Layer) {
-        let d_activation = &previous_layer.weights.t().dot(&previous_layer.d_activation) * &self.derivate();
+        self.layer.d_activation = &previous_layer.weights.t().dot(&previous_layer.d_activation) * &self.derivate();
     }
 }

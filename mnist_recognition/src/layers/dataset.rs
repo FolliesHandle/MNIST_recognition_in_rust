@@ -1,12 +1,14 @@
 use mnist::*;
-use ndarray::Array2;
+use ndarray::{Array2};
 use rand::{distributions::Uniform, prelude::Distribution};
+
+use super::layer::Layer;
 pub struct Dataset {
     // 2D array of flattened images from MNIST Dataset, shuffled
-    pub training_data: Array2<f64>,
-    pub training_labels: Array2<f64>,
-    pub testing_data: Array2<f64>,
-    pub testing_labels: Array2<f64>,
+    pub training_data: Layer,
+    pub training_labels: Layer,
+    pub testing_data: Layer,
+    pub testing_labels: Layer,
 }
 
 impl Dataset {
@@ -27,18 +29,18 @@ impl Dataset {
         }
     }
 
-    fn dist(labels: &Array2<f64>, dataset_annotation: &str) {
-        let mut distribution = Array2::<f64>::zeros((10, 1));
-        println!("\n\n-----------------------------");
-        println!("{}", dataset_annotation);
+    pub fn f32_vec_to_array(vector: &Vec<f32>, n: usize, m: usize) -> Array2<f64> {
+        Array2::from_shape_vec((n, m), vector.to_vec())
+            .expect("Error converting images to Array3 struct")
+            .t()
+            .map(|x| *x as f64)
+    }
 
-        for item in labels.iter() {
-            distribution[[*item as usize, 0]] += 1.;
-        }
-
-        for ((i, _), value) in distribution.indexed_iter() {
-            println!("Digit {}: {}", i, value);
-        }
+    pub fn u8_vec_to_array(vector: &Vec<u8>, n: usize, m: usize) -> Array2<f64> {
+        Array2::from_shape_vec((n, m), vector.to_vec())
+            .expect("Error converting images to Array3 struct")
+            .t()
+            .map(|x| *x as f64)
     }
 
     pub fn new() -> Dataset {
@@ -57,40 +59,22 @@ impl Dataset {
             .normalize();
 
         // Create
-        let mut training_data: Array2<f64> = Array2::from_shape_vec((60_000, 784), trn_img)
-            .expect("Error converting images to Array3 struct")
-            .t()
-            .map(|x| *x as f64);
+        let mut training_data: Array2<f64> = Dataset::f32_vec_to_array(&trn_img, 60_000, 784);
 
-        // Convert the returned Mnist struct to Array2 format
-        let mut training_labels: Array2<f64> = Array2::from_shape_vec((60_000, 1), trn_lbl)
-            .expect("Error converting training labels to Array2 struct")
-            .t()
-            .map(|x| *x as f64);
+        let mut training_labels: Array2<f64> = Dataset::u8_vec_to_array(&trn_lbl, 60_000, 1);
 
-        let mut testing_data: Array2<f64> = Array2::from_shape_vec((10_000, 784), tst_img)
-            .expect("Error converting images to Array3 struct")
-            .t()
-            .map(|x| *x as f64);
+        let mut testing_data: Array2<f64> = Dataset::f32_vec_to_array(&tst_img, 10_000, 784);
 
-        let mut testing_labels: Array2<f64> = Array2::from_shape_vec((10_000, 1), tst_lbl)
-            .expect("Error converting testing labels to Array2 struct")
-            .t()
-            .map(|x| *x as f64);
-
-        Dataset::dist(&training_labels, "training pre shuffle");
-        Dataset::dist(&testing_labels, "testing pre shuffle");
+        let mut testing_labels: Array2<f64> = Dataset::u8_vec_to_array(&tst_lbl, 10_000, 1);
 
         Dataset::shuffle(&mut [&mut training_data, &mut training_labels]);
         Dataset::shuffle(&mut [&mut testing_data, &mut testing_labels]);
 
-        Dataset::dist(&training_labels, "training shuffled");
-        Dataset::dist(&testing_labels, "testing shuffled");
         Dataset {
-            training_data: training_data,
-            training_labels: training_labels,
-            testing_data: testing_data,
-            testing_labels: testing_labels,
+            training_data: Layer::dummy_layer(training_data),
+            training_labels: Layer::dummy_layer(training_labels),
+            testing_data: Layer::dummy_layer(testing_data),
+            testing_labels: Layer::dummy_layer(testing_labels),
         }
     }
 }
