@@ -1,6 +1,7 @@
-use rand::{distributions::Uniform, prelude::Distribution};
-
 use ndarray::{prelude::Array2, Axis, Zip};
+use ndarray::{Array, Ix2};
+use ndarray_rand::RandomExt;
+use ndarray_rand::rand_distr::Uniform;
 
 pub trait ActivationLayer {
     fn activate(&mut self);
@@ -24,15 +25,16 @@ impl Layer {
         let preactivation = Array2::zeros((nodes, samples));
         let layer = Array2::zeros((nodes, samples));
         let d_activation = Array2::zeros((nodes, samples));
-
-        let rand_range = Uniform::from(-0.5f64..=0.5f64);
-        let mut rng = rand::thread_rng();
-
-        let weights = Array2::from_shape_simple_fn((nodes, input), || rand_range.sample(&mut rng));
-        let d_weights =
-            Array2::from_shape_simple_fn((nodes, input), || rand_range.sample(&mut rng));
-        let biases = Array2::from_shape_simple_fn((nodes, 1), || rand_range.sample(&mut rng));
-        let d_biases = Array2::from_shape_simple_fn((nodes, 1), || rand_range.sample(&mut rng));
+        
+        let mut weights = Array::<f64, Ix2>::random((nodes, input), Uniform::new_inclusive(-0.5, 0.5f64));
+        for item in weights.iter_mut() {
+            if *item == 0f64 {
+                *item += 0.2;
+            }
+        }
+        let d_weights = Array2::<f64>::zeros((nodes, input));
+        let biases = Array2::<f64>::zeros((nodes, 1));
+        let d_biases = Array2::<f64>::zeros((nodes, 1));
 
         Layer {
             preactivation: preactivation,
@@ -68,21 +70,21 @@ impl Layer {
     pub fn backward_prop(&mut self, previous_layer: &Layer) {
         self.d_weights = self.d_activation
             .dot(&previous_layer.layer.t())
-            .map(|x| x * 1. / self.samples as f64);
+            .map(|x| x * 1.0 / self.samples as f64);
         self.d_biases = self
             .d_activation
             .sum_axis(Axis(1))
-            .map(|x| x * 1. / (self.samples as f64))
+            .map(|x| x * 1.0 / (self.samples as f64))
             .insert_axis(Axis(1));
     }
 
     pub fn update_params(&mut self) {
         Zip::from(&mut self.weights)
             .and(&self.d_weights)
-            .apply(|a, b| *a -= self.alpha * b);
+            .for_each(|a, b| *a -= self.alpha * b);
         Zip::from(&mut self.biases)
             .and(&self.d_biases)
-            .apply(|a, b| *a -= self.alpha * b);
+            .for_each(|a, b| *a -= self.alpha * b);
     }
 
     pub fn one_hot(input: &Array2<f64>) -> Layer{

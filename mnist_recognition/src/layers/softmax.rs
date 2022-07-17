@@ -1,5 +1,5 @@
 
-use ndarray::{prelude::Array2};
+use ndarray::{prelude::Array2, s};
 
 use super::layer::{Layer, ActivationLayer};
 
@@ -23,20 +23,24 @@ impl Softmax {
 impl ActivationLayer for Softmax {
     fn activate(&mut self) {
         let mut row_sums = Array2::<f64>::zeros((1, self.layer.preactivation.ncols()));
-        let mut m = -f64::INFINITY;
+        let mut out = Array2::<f64>::zeros(self.layer.preactivation.raw_dim());
+        let mut m = f64::NEG_INFINITY;
         for item in self.layer.preactivation.iter() {
-                if item > &m {
-                    m = *item;
-                }
+            if *item > m {
+                m = *item;
+            }
         }
         for ((i, j),item) in self.layer.preactivation.indexed_iter() {
-            self.layer.layer[[i,j]] = (item - m).exp();
-            row_sums[[0,j]] += self.layer.layer[[i,j]];
+            out[[i,j]] = (*item - m).exp();
+            row_sums[[0,j]] += out[[i,j]];
         }
         
         for ((i, j), _) in self.layer.preactivation.indexed_iter() {
-            self.layer.layer[[i,j]] /= row_sums[[0,j]];
+            out[[i,j]] /= row_sums[[0,j]];
         }
+        dbg!(out.slice(s![..,50usize]));
+        self.layer.layer = out;
+        
     }
 
     fn deactivate(&mut self, previous_layer: &Layer) {

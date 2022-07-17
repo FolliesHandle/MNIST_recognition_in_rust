@@ -1,6 +1,11 @@
 use crate::layers::{softmax::Softmax, relu::ReLU, dataset::Dataset, layer::{Layer, ActivationLayer}};
 use ndarray::{prelude::Array2, Axis};
 
+
+enum CONFIG {
+    TRAIN,
+    TEST,
+}
 pub struct Model {
     dataset: Dataset,
     hidden_layer: ReLU,
@@ -10,7 +15,7 @@ pub struct Model {
 impl Model {
     pub fn new(alpha: f64) -> Model {
         let dataset = Dataset::new();
-        let hidden_layer = ReLU::new(784, 64, dataset.training_data.layer.ncols(), alpha, 0.0);
+        let hidden_layer = ReLU::new(784, 64, dataset.training_data.layer.ncols(), alpha, 0.01);
         let output_layer = Softmax::new(64, 10, dataset.training_data.layer.ncols(), alpha);
         Model {
             dataset: dataset,
@@ -18,19 +23,29 @@ impl Model {
             output_layer: output_layer,
         }
     }
-
-    fn forward_prop(&mut self, data: &mut Layer) {
-        self.hidden_layer.layer.forward_prop(data);
-        self.hidden_layer.activate();
-        self.output_layer.layer.forward_prop(&self.hidden_layer.layer);
-        self.output_layer.activate();
+    fn forward_prop(&mut self, configuration: CONFIG) {
+        match configuration {
+            CONFIG::TRAIN => {
+                self.hidden_layer.layer.forward_prop(&self.dataset.training_data);
+                self.hidden_layer.activate();
+                self.output_layer.layer.forward_prop(&self.hidden_layer.layer);
+                self.output_layer.activate();
+            }
+            CONFIG::TEST => {
+                self.hidden_layer.layer.forward_prop(&self.dataset.testing_data);
+                self.hidden_layer.activate();
+                self.output_layer.layer.forward_prop(&self.hidden_layer.layer);
+                self.output_layer.activate();
+            }
+        }
+        
     }
 
-    fn backward_prop(&mut self, labels: &mut Layer, data: &mut Layer) {
-        self.output_layer.deactivate(&Layer::one_hot(&labels.layer));
+    fn backward_prop(&mut self) {
+        self.output_layer.deactivate(&Layer::one_hot(&self.dataset.training_labels.layer));
         self.output_layer.layer.backward_prop(&self.hidden_layer.layer);
         self.hidden_layer.deactivate(&self.output_layer.layer);
-        self.hidden_layer.layer.backward_prop(&data);
+        self.hidden_layer.layer.backward_prop(&self.dataset.training_data);
     }
     
     fn update_params(&mut self) {
@@ -59,7 +74,7 @@ impl Model {
         let mut sum = 0.0f64;
         let mut label_accuracy = Array2::<i32>::zeros((10, 2));
         for ((i, j), item) in predictions.indexed_iter() {
-            if item == &ground_truth[[i, j]] {
+            if *item == ground_truth[[i, j]] {
                 sum += 1.0;
                 label_accuracy[[ground_truth[[i, j]] as usize, 0]] += 1;
             }
@@ -85,8 +100,8 @@ impl Model {
 
     pub fn train(&mut self, iterations: usize) {
         for i in 0..iterations {
-            self.forward_prop(&mut self.dataset.training_data.clone());
-            self.backward_prop(&mut self.dataset.training_labels.clone(), &mut self.dataset.training_data.clone());
+            self.forward_prop(CONFIG::TRAIN);
+            self.backward_prop();
             self.update_params();
             if i % 10 == 0 {
                 println!("\n\n-----------------------------");
@@ -101,7 +116,7 @@ impl Model {
 
     pub fn test(&mut self) {
         println!("\n\nTESTING NETWORK");
-        self.forward_prop(&mut self.dataset.testing_labels.clone());
+        self.forward_prop(CONFIG::TEST);
         print!(
             "Accuracy: {}",
             self.get_accuracy(self.get_predictions(), &self.dataset.training_labels.layer)
