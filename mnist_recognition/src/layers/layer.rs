@@ -25,14 +25,9 @@ impl Layer {
         let preactivation = Array2::zeros((nodes, samples));
         let layer = Array2::zeros((nodes, samples));
         let d_activation = Array2::zeros((nodes, samples));
-
-        let mut weights = Array::<f64, Ix2>::random(
+        let weights = Array2::<f64>::zeros(
             (nodes, input),
-            Normal::new(0.0f64, 1.0f64).unwrap(),
         );
-        for item in weights.iter_mut() {
-            *item *= (2f64/input as f64).sqrt();
-        }
         let d_weights = Array2::<f64>::zeros((nodes, input));
         let biases = Array2::<f64>::zeros((nodes, 1));
         let d_biases = Array2::<f64>::zeros((nodes, 1));

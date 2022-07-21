@@ -104,7 +104,7 @@ impl Model {
             self.forward_prop(CONFIG::TRAIN);
             self.backward_prop();
             self.update_params();
-            if i % 10 == 0 {
+            if i % 1 == 0 {
                 println!("\n\n-----------------------------");
                 println!("Total Iterations: {}", i);
                 println!(

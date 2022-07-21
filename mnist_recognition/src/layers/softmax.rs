@@ -1,5 +1,6 @@
 
-use ndarray::{prelude::Array2, s};
+use ndarray::{prelude::Array2, s, Array, Ix2};
+use ndarray_rand::{RandomExt, rand_distr::Normal};
 
 use super::layer::{Layer, ActivationLayer};
 
@@ -15,7 +16,11 @@ impl Softmax {
         samples: usize,
         alpha: f64,
     ) -> Softmax {
-        let layer = Layer::new_layer(input, nodes, samples, alpha);
+        let mut layer = Layer::new_layer(input, nodes, samples, alpha);
+        layer.weights = Array::<f64, Ix2>::random(
+            (nodes, input),
+            Normal::new(0.0f64, 1.0f64/input as f64).unwrap(),
+        );
         Softmax { layer: layer }
     }
 }
@@ -38,7 +43,6 @@ impl ActivationLayer for Softmax {
         for ((i, j), _) in self.layer.preactivation.indexed_iter() {
             out[[i,j]] /= row_sums[[0,j]];
         }
-        dbg!(out.slice(s![..,50usize]));
         self.layer.layer = out;
         
     }

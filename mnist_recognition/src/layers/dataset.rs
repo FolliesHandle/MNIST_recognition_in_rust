@@ -19,11 +19,11 @@ impl Dataset {
             let shared_length = slices[0].index_axis_mut(ndarray::Axis(0), 0).len();
 
             for i in 0..shared_length {
-                let next = Uniform::from(i..shared_length).sample(&mut rng);
-
+                let next = Uniform::from(i..shared_length);
+                let index = next.sample(&mut rng);
                 for slice in slices.iter_mut() {
                     let mut row = slice.index_axis_mut(ndarray::Axis(0), 0);
-                    row.swap(i, next);
+                    row.swap(i, index);
                 }
             }
         }
@@ -57,16 +57,16 @@ impl Dataset {
             ..
         }: NormalizedMnist = MnistBuilder::new()
             .label_format_digit()
-            .training_set_length(60_000)
+            .training_set_length(50_000)
             .validation_set_length(0)
             .test_set_length(10_000)
             .finalize()
             .normalize();
 
         // Create
-        let mut training_data: Array2<f64> = Dataset::f32_vec_to_array(&trn_img, 60_000, 784);
+        let mut training_data: Array2<f64> = Dataset::f32_vec_to_array(&trn_img, 50_000, 784);
 
-        let mut training_labels: Array2<f64> = Dataset::u8_vec_to_array(&trn_lbl, 60_000, 1);
+        let mut training_labels: Array2<f64> = Dataset::u8_vec_to_array(&trn_lbl, 50_000, 1);
 
         let mut testing_data: Array2<f64> = Dataset::f32_vec_to_array(&tst_img, 10_000, 784);
 

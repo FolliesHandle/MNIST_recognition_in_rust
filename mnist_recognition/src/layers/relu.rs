@@ -1,6 +1,7 @@
 
 
-use ndarray::{prelude::Array2};
+use ndarray::{prelude::Array2, Array, Ix2};
+use ndarray_rand::{RandomExt, rand_distr::Normal};
 use super::layer::{Layer, ActivationLayer};
 pub struct ReLU {
     pub layer: Layer,
@@ -15,7 +16,14 @@ impl ReLU {
         alpha: f64,
         relu_coefficient: f64,
     ) -> ReLU {
-        let layer = Layer::new_layer(input, nodes, samples, alpha);
+        let mut layer = Layer::new_layer(input, nodes, samples, alpha);
+        layer.weights = Array::<f64, Ix2>::random(
+            (nodes, input),
+            Normal::new(0.0f64, 1.0f64/input as f64).unwrap(),
+        );
+        for item in layer.weights.iter_mut() {
+            *item *= (2f64/input as f64).sqrt();
+        }
         ReLU {
             layer: layer,
             relu_coefficient :relu_coefficient,
