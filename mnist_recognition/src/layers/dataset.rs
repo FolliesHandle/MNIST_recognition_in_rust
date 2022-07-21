@@ -29,6 +29,11 @@ impl Dataset {
         }
     }
 
+    pub fn randomize(&mut self) -> () {
+        Dataset::shuffle(&mut [&mut self.training_data.layer, &mut self.training_labels.layer]);
+        Dataset::shuffle(&mut [&mut self.testing_data.layer, &mut self.testing_labels.layer]);
+    }
+
     pub fn f32_vec_to_array(vector: &Vec<f32>, n: usize, m: usize) -> Array2<f64> {
         Array2::from_shape_vec((n, m), vector.to_vec())
             .expect("Error converting images to Array3 struct")

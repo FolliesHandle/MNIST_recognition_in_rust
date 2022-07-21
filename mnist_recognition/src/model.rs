@@ -15,8 +15,8 @@ pub struct Model {
 impl Model {
     pub fn new(alpha: f64) -> Model {
         let dataset = Dataset::new();
-        let hidden_layer = ReLU::new(784, 64, dataset.training_data.layer.ncols(), alpha, 0.01);
-        let output_layer = Softmax::new(64, 10, dataset.training_data.layer.ncols(), alpha);
+        let hidden_layer = ReLU::new(784, 128, dataset.training_data.layer.ncols(), alpha, 0.01);
+        let output_layer = Softmax::new(128, 10, dataset.training_data.layer.ncols(), alpha);
         Model {
             dataset: dataset,
             hidden_layer: hidden_layer,
@@ -100,6 +100,7 @@ impl Model {
 
     pub fn train(&mut self, iterations: usize) {
         for i in 0..iterations {
+            self.dataset.randomize();
             self.forward_prop(CONFIG::TRAIN);
             self.backward_prop();
             self.update_params();
