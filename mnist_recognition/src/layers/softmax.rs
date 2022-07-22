@@ -1,5 +1,5 @@
 
-use ndarray::{prelude::Array2, s, Array, Ix2};
+use ndarray::{prelude::Array2, Array, Ix2};
 use ndarray_rand::{RandomExt, rand_distr::Normal};
 
 use super::layer::{Layer, ActivationLayer};

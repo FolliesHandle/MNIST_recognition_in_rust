@@ -2,7 +2,6 @@ use mnist::*;
 use ndarray::s;
 use ndarray::{Array2};
 use rand::Rng;
-use rand::{distributions::Uniform, prelude::Distribution};
 
 // use crate::model::CONFIG;
 
