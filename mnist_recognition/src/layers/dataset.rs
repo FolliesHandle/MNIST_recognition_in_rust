@@ -1,79 +1,85 @@
 use mnist::*;
+use ndarray::s;
 use ndarray::{Array2};
+use rand::Rng;
 use rand::{distributions::Uniform, prelude::Distribution};
 
+// use crate::model::CONFIG;
+
 use super::layer::Layer;
+// pub struct Slices {
+//     data: Layer,
+//     label: Layer,
+// }
+
 pub struct Dataset {
     // 2D array of flattened images from MNIST Dataset, shuffled
     pub training_data: Layer,
     pub training_labels: Layer,
     pub testing_data: Layer,
     pub testing_labels: Layer,
+    // testing_slice: Slices,
+    // training_slice: Slices,
 }
 
 impl Dataset {
-    fn shuffle(slices: &mut [&mut Array2<f64>]) {
-        if slices.len() > 0 {
-            let mut rng = rand::thread_rng();
+    pub fn shuffle(&mut self) {
+        let mut rng = rand::thread_rng();
+        let shared_length = self.training_data.layer.index_axis_mut(ndarray::Axis(0), 0).len();
+        assert_eq!(self.training_data.layer.ncols(), self.training_labels.layer.ncols());
+        println!("Shuffling Data!");
+        for i in 0..shared_length {
+            let next = rng.gen_range(0..shared_length);
+            if i != next {
+                let (mut index, mut random) = self.training_data.layer.multi_slice_mut((s![.., i], s![.., next]));
+                std::mem::swap(&mut index, &mut random);
 
-            let shared_length = slices[0].index_axis_mut(ndarray::Axis(0), 0).len();
-
-            for i in 0..shared_length {
-                let next = Uniform::from(i..shared_length);
-                let index = next.sample(&mut rng);
-                for slice in slices.iter_mut() {
-                    let mut row = slice.index_axis_mut(ndarray::Axis(0), 0);
-                    row.swap(i, index);
-                }
+                let (mut index_2, mut random_2) = self.training_labels.layer.multi_slice_mut((s![.., i], s![.., next]));
+                std::mem::swap(&mut index_2, &mut random_2);
             }
+        }
+        
+    }
+
+    pub fn vec_to_array(vector: &Vec<u8>, n: usize, m: usize, data: bool) -> Array2<f32> {
+        if data {
+            Array2::from_shape_vec((n, m), vector.to_vec())
+                .expect("Error converting images to Array3 struct")
+                .t()
+                .map(|x| *x as f32)
+                .map(|x| *x / 256f32)
+        }    
+        else {
+            Array2::from_shape_vec((n, m), vector.to_vec())
+                .expect("Error converting images to Array3 struct")
+                .t()
+                .map(|x| *x as f32)
         }
     }
 
-    pub fn randomize(&mut self) -> () {
-        Dataset::shuffle(&mut [&mut self.training_data.layer, &mut self.training_labels.layer]);
-        Dataset::shuffle(&mut [&mut self.testing_data.layer, &mut self.testing_labels.layer]);
-    }
-
-    pub fn f32_vec_to_array(vector: &Vec<f32>, n: usize, m: usize) -> Array2<f64> {
-        Array2::from_shape_vec((n, m), vector.to_vec())
-            .expect("Error converting images to Array3 struct")
-            .t()
-            .map(|x| *x as f64)
-    }
-
-    pub fn u8_vec_to_array(vector: &Vec<u8>, n: usize, m: usize) -> Array2<f64> {
-        Array2::from_shape_vec((n, m), vector.to_vec())
-            .expect("Error converting images to Array3 struct")
-            .t()
-            .map(|x| *x as f64)
-    }
-
     pub fn new() -> Dataset {
-        let NormalizedMnist {
+        let Mnist {
             trn_img,
             trn_lbl,
             tst_img,
             tst_lbl,
             ..
-        }: NormalizedMnist = MnistBuilder::new()
+        }: Mnist = MnistBuilder::new()
             .label_format_digit()
             .training_set_length(50_000)
             .validation_set_length(0)
             .test_set_length(10_000)
-            .finalize()
-            .normalize();
+            .finalize();
 
         // Create
-        let mut training_data: Array2<f64> = Dataset::f32_vec_to_array(&trn_img, 50_000, 784);
-
-        let mut training_labels: Array2<f64> = Dataset::u8_vec_to_array(&trn_lbl, 50_000, 1);
-
-        let mut testing_data: Array2<f64> = Dataset::f32_vec_to_array(&tst_img, 10_000, 784);
-
-        let mut testing_labels: Array2<f64> = Dataset::u8_vec_to_array(&tst_lbl, 10_000, 1);
-
-        Dataset::shuffle(&mut [&mut training_data, &mut training_labels]);
-        Dataset::shuffle(&mut [&mut testing_data, &mut testing_labels]);
+        let training_data: Array2<f32> = Dataset::vec_to_array(&trn_img, 50_000, 784, true);
+        assert!(!training_data.is_empty());
+        let training_labels: Array2<f32> = Dataset::vec_to_array(&trn_lbl, 50_000, 1, false);
+        assert!(!training_labels.is_empty());
+        let testing_data: Array2<f32> = Dataset::vec_to_array(&tst_img, 10_000, 784, true);
+        assert!(!testing_data.is_empty());
+        let testing_labels: Array2<f32> = Dataset::vec_to_array(&tst_lbl, 10_000, 1, false);
+        assert!(!testing_labels.is_empty());
 
         Dataset {
             training_data: Layer::dummy_layer(training_data),
@@ -82,4 +88,37 @@ impl Dataset {
             testing_labels: Layer::dummy_layer(testing_labels),
         }
     }
+
+    // pub fn set_slice(self, index: isize, mode: CONFIG) {
+    //     match mode {
+    //         CONFIG::TRAIN => {
+    //             self.training_slice.data = Layer::dummy_layer(
+    //                 self.training_data
+    //                     .layer
+    //                     .slice_axis(Axis(1), Slice::new(index, Some(index), 1))
+    //                     .to_owned(),
+    //             );
+    //             self.training_slice.label = Layer::dummy_layer(
+    //                 self.training_data
+    //                     .layer
+    //                     .slice_axis(Axis(1), Slice::new(index, Some(index), 1))
+    //                     .to_owned(),
+    //             );
+    //         }
+    //         CONFIG::TEST => {
+    //             self.testing_slice.data = Layer::dummy_layer(
+    //                 self.training_data
+    //                     .layer
+    //                     .slice_axis(Axis(1), Slice::new(index, Some(index), 1))
+    //                     .to_owned(),
+    //             );
+    //             self.testing_slice.label = Layer::dummy_layer(
+    //                 self.training_data
+    //                     .layer
+    //                     .slice_axis(Axis(1), Slice::new(index, Some(index), 1))
+    //                     .to_owned(),
+    //             );
+    //         }
+    //     }
+    // }
 }
