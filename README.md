@@ -1,4 +1,4 @@
-# MNIST-Recognition-in-Rust
+# MNIST Recognition in Rust - rustnist
 
 ## Overview
 This is a little project idea I had after coming across this video: https://youtu.be/w8yWXqWQYmU and the corresponding kaggle notebook. Originally, my idea was to reimplement the network in rust in a similar fashion, but over time I realized two things:
