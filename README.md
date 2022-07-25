@@ -11,7 +11,7 @@ After realizing those two things, I went back and started refactoring the codeba
 - I was not using the correct weights initialization for each layer, leading to my network beung wildly inconsistent and an accuracy of around 40%
 - My lin-alg was not correct, and at one point I was using element-wise multiplication instead of true matrix multiplication
 
-Overall, this was a fun project that showed me how simple neural networks work at the lowest level, and additionally gave me a chance to try out rust.
+Overall, this was a fun project that showed me how simple neural networks work at a low level, and additionally gave me a chance to try out rust.
 
 ## Instructions for Building
 
