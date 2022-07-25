@@ -7,7 +7,8 @@ This is a little project idea I had after coming across this video: https://yout
 
 After realizing those two things, I went back and started refactoring the codebase, which wasn't learning regardless due to my implementation of a broken algorithm. I found this process to be highly rewarding, as it forced me to understand each and every component of my simple one layer network. This allowed me to figure out many of the errors in the network, some of which were:
 - My softmax implementation was entirely incorrect
-- My ReLU implementation was correct, but I was not using a leaky ReLU, leading to my network exploding
+- My ReLU implementation was not correct, and I was not using a leaky ReLU, leading to my network exploding
+  - Additionally, I was incorrectly activating ReLU, which caused a drop in accuracy
 - I was not using the correct weights initialization for each layer, leading to my network beung wildly inconsistent and an accuracy of around 40%
 - My lin-alg was not correct, and at one point I was using element-wise multiplication instead of true matrix multiplication
 
