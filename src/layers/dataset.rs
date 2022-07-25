@@ -87,7 +87,7 @@ impl Dataset {
             .label_format_digit()
             .training_set_length(50_000)
             .validation_set_length(0)
-            .test_set_length(10_000)
+            .test_set_length(20_000)
             .finalize();
 
         // create each array, and assert that it is not empyt data
@@ -95,9 +95,9 @@ impl Dataset {
         assert!(!training_data.is_empty());
         let training_labels: Array2<f32> = Dataset::vec_to_array(&trn_lbl, 50_000, 1, false);
         assert!(!training_labels.is_empty());
-        let testing_data: Array2<f32> = Dataset::vec_to_array(&tst_img, 10_000, 784, true);
+        let testing_data: Array2<f32> = Dataset::vec_to_array(&tst_img, 20_000, 784, true);
         assert!(!testing_data.is_empty());
-        let testing_labels: Array2<f32> = Dataset::vec_to_array(&tst_lbl, 10_000, 1, false);
+        let testing_labels: Array2<f32> = Dataset::vec_to_array(&tst_lbl, 20_000, 1, false);
         assert!(!testing_labels.is_empty());
 
         // slice of training set
