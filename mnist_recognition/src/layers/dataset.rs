@@ -3,13 +3,7 @@ use ndarray::s;
 use ndarray::{Array2};
 use rand::Rng;
 
-// use crate::model::CONFIG;
-
 use super::layer::Layer;
-// pub struct Slices {
-//     data: Layer,
-//     label: Layer,
-// }
 
 pub struct Dataset {
     // 2D array of flattened images from MNIST Dataset, shuffled
@@ -17,8 +11,6 @@ pub struct Dataset {
     pub training_labels: Layer,
     pub testing_data: Layer,
     pub testing_labels: Layer,
-    // testing_slice: Slices,
-    // training_slice: Slices,
 }
 
 impl Dataset {
@@ -26,7 +18,6 @@ impl Dataset {
         let mut rng = rand::thread_rng();
         let shared_length = self.training_data.layer.index_axis_mut(ndarray::Axis(0), 0).len();
         assert_eq!(self.training_data.layer.ncols(), self.training_labels.layer.ncols());
-        println!("Shuffling Data!");
         for i in 0..shared_length {
             let next = rng.gen_range(0..shared_length);
             if i != next {

@@ -1,5 +1,5 @@
 use ndarray::{prelude::Array2, Axis, Zip};
-extern crate blas;
+extern crate blas_src;
 
 pub trait ActivationLayer {
     fn activate(&mut self);

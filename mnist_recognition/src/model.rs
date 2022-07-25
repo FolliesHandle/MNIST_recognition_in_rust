@@ -1,4 +1,4 @@
-use crate::layers::{softmax::Softmax, relu::ReLU, dataset::Dataset, layer::{Layer, ActivationLayer}};
+use crate::layers::{softmax::Softmax, relu::ReLU, dataset::Dataset};
 use ndarray::{prelude::Array2, Axis};
 
 pub enum CONFIG {
@@ -8,20 +8,20 @@ pub enum CONFIG {
 pub struct Model {
     dataset: Dataset,
     hidden_layer: ReLU,
-    hidden_layer_2: ReLU,
+    // hidden_layer_2: ReLU,
     output_layer: Softmax,
 }
 
 impl Model {
     pub fn new(alpha: f32) -> Model {
         let dataset = Dataset::new();
-        let hidden_layer = ReLU::new(784, 128, dataset.training_data.layer.ncols(), alpha, 0.01);
-        let hidden_layer_2 = ReLU::new(128, 64, dataset.training_data.layer.ncols(), alpha, 0.01);
+        let hidden_layer = ReLU::new(784, 64, dataset.training_data.layer.ncols(), alpha, 0.01);
+        // let hidden_layer_2 = ReLU::new(128, 64, dataset.training_data.layer.ncols(), alpha, 0.01);
         let output_layer = Softmax::new(64, 10, dataset.training_data.layer.ncols(), alpha);
         Model {
             dataset,
             hidden_layer,
-            hidden_layer_2,
+            // hidden_layer_2,
             output_layer,
         }
     }
@@ -29,31 +29,34 @@ impl Model {
         match configuration {
             CONFIG::TRAIN => {
                 self.hidden_layer.forward_prop(&self.dataset.training_data);
-                self.hidden_layer_2.forward_prop(&self.hidden_layer.layer);
-                self.output_layer.forward_prop(&self.hidden_layer_2.layer);
+                // self.hidden_layer_2.forward_prop(&self.hidden_layer.layer);
+                self.output_layer.forward_prop(&self.hidden_layer.layer);
             }
             CONFIG::TEST => {
                 self.hidden_layer.forward_prop(&self.dataset.testing_data);
-                self.hidden_layer_2.forward_prop(&self.hidden_layer.layer);
-                self.output_layer.forward_prop(&self.hidden_layer_2.layer);
+                // self.hidden_layer_2.forward_prop(&self.hidden_layer.layer);
+                self.output_layer.forward_prop(&self.hidden_layer.layer);
             }
         }
         
     }
 
     fn backward_prop(&mut self) {
-        self.output_layer.deactivate(&Layer::one_hot(&self.dataset.training_labels.layer));
-        self.output_layer.layer.backward_prop(&self.hidden_layer_2.layer);
-        self.hidden_layer_2.deactivate(&self.output_layer.layer);
-        self.hidden_layer_2.layer.backward_prop(&self.hidden_layer.layer);
-        self.hidden_layer.deactivate(&self.hidden_layer_2.layer);
-        self.hidden_layer.layer.backward_prop(&self.dataset.training_data);
+        // self.output_layer.deactivate(&Layer::one_hot(&self.dataset.training_labels.layer));
+        // self.output_layer.layer.backward_prop(&self.hidden_layer_2.layer);
+        self.output_layer.backward_prop(&self.dataset.training_labels,&self.hidden_layer.layer);
+        // self.hidden_layer_2.deactivate(&self.output_layer.layer);
+        // self.hidden_layer_2.layer.backward_prop(&self.hidden_layer.layer);
+        // self.hidden_layer_2.backward_prop(&self.output_layer.layer, &self.hidden_layer.layer);
+        // self.hidden_layer.deactivate(&self.hidden_layer_2.layer);
+        // self.hidden_layer.layer.backward_prop(&self.dataset.training_data);
+        self.hidden_layer.backward_prop(&self.output_layer.layer, &self.dataset.training_data);
     }
     
     fn update_params(&mut self) {
         self.output_layer.layer.update_params();
         self.hidden_layer.layer.update_params();
-        self.hidden_layer_2.layer.update_params();
+        // self.hidden_layer_2.layer.update_params();
     }
 
     fn get_predictions(&self) -> Array2<f32> {
@@ -107,7 +110,7 @@ impl Model {
             self.forward_prop(CONFIG::TRAIN);
             self.backward_prop();
             self.update_params();
-            if i % 1 == 0 {
+            if i % 10 == 0 {
                 println!("\n\n-----------------------------");
                 println!("Total Iterations: {}", i);
                 println!(

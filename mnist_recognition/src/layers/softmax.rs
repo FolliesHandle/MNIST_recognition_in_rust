@@ -3,7 +3,7 @@ use ndarray::{prelude::Array2, Array, Ix2};
 use ndarray_rand::{RandomExt, rand_distr::Normal};
 
 use super::layer::{Layer, ActivationLayer};
-extern crate blas;
+extern crate blas_src;
 
 pub struct Softmax {
     pub layer: Layer,
@@ -27,6 +27,11 @@ impl Softmax {
     pub fn forward_prop(&mut self, previous_layer: &Layer) {
         self.layer.forward_prop(&previous_layer);
         self.activate();
+    }
+
+    pub fn backward_prop(&mut self, previous_layer: &Layer, next_layer: &Layer) {
+        self.deactivate(&Layer::one_hot(&previous_layer.layer));
+        self.layer.backward_prop(&next_layer);
     }
 }
 

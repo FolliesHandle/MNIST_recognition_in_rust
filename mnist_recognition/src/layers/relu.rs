@@ -3,7 +3,7 @@
 use ndarray::{prelude::Array2, Array, Ix2};
 use ndarray_rand::{RandomExt, rand_distr::{Normal}};
 use super::layer::{Layer, ActivationLayer};
-extern crate blas;
+extern crate blas_src;
 
 pub struct ReLU {
     pub layer: Layer,
@@ -21,12 +21,8 @@ impl ReLU {
         let mut layer = Layer::new_layer(input, nodes, samples, alpha);
         layer.weights = Array::<f32, Ix2>::random(
             (nodes, input),
-            // Normal::new(0.0f32, (2f32/input as f32).sqrt()).unwrap(),
-            Normal::new(nodes as f32, input as f32).unwrap(),
+            Normal::new(0.0f32, 2f32/input as f32).unwrap(),
         );
-        for item in layer.weights.iter_mut() {
-            *item *= (2f32/input as f32).sqrt();
-        }
         ReLU {
             layer: layer,
             relu_coefficient :relu_coefficient,
@@ -48,6 +44,11 @@ impl ReLU {
     pub fn forward_prop(&mut self, previous_layer: &Layer) {
         self.layer.forward_prop(&previous_layer);
         self.activate();
+    }
+
+    pub fn backward_prop(&mut self, previous_layer: &Layer, next_layer: &Layer) {
+        self.deactivate(&previous_layer);
+        self.layer.backward_prop(&next_layer);
     }
 }
 
