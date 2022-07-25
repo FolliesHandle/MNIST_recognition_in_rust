@@ -1,4 +1,4 @@
-# MNIST-Recognition-in-Rust
+# MNIST Recognition in Rust - rustnist
 
 ## Overview
 This is a little project idea I had after coming across this video: https://youtu.be/w8yWXqWQYmU and the corresponding kaggle notebook. Originally, my idea was to reimplement the network in rust in a similar fashion, but over time I realized two things:
@@ -37,8 +37,33 @@ data:
 | train-labels-idx1-ubyte
 ```
 
-Finally, make sure that `blas-src` is compiled with the correct BLAS source in `Cargo.toml`. If you do not want to use BLAS, then you can remove the dependency and the feature in `Cargo.toml`. If you do this, you will have to remove the import in `relu.rs`, `dataset.rs`, `softmax.rs`, and `layer.rs`.
+Additionally, make sure that `blas-src` is compiled with the correct BLAS source in `Cargo.toml`. If you do not want to use BLAS, then you can remove the dependency and the feature in `Cargo.toml`. If you do this, you will have to remove the import in `relu.rs`, `dataset.rs`, `softmax.rs`, and `layer.rs`.
+
+Finally, the program can be built with:
+```
+cargo build --release
+```
+
+## Running
+If everything has been built correctly, you will find an executable named `rustnist` in `./target/release/` that can be used to run the program. You are also able to adjust some basic hyperparameters with flags:
+```
+-a, --alpha <ALPHA>              Learning rate of the network [default: 0.01]
+-b, --batch-size <BATCH_SIZE>    Batch size for BGD [default: 100]
+-e, --epochs <EPOCHS>            Amount of epochs to train for [default: 1000]
+-l, --layer-size <LAYER_SIZE>    # of nodes in the hidden layer [default: 128]
+```
+The default hyperparameters above should get you an accuracy of around 80%, and feel free to mess around with each parameter as you see fit.
+
 
 ## Final Notes
+The actual implementation of `rustnist` is build to be modular in nature, and one can define additional layers and activations with a minimal amount of effort. This is NOT a neural network library obviously, so do not expect it to blow your mind when you add more layers or create a complex network, but as something to play around with it is definitely fun.
+
+To add a layer with a different activation function, such as tanh or sigmoid, you should use `relu.rs` as a functional template for what needs to be implemented. The cliffnotes are:
+- Create a struct with a `Layer` member
+- Initialize weights in `new()`
+- Implement `forward_prop` and `backward_prop` in the struct implementation
+- Implement `activate` and `deactivate`
+- Make sure your math is sound
+And then you can manually add that layer to `model.rs` in the functions `new`, `forward_prop`, `backward_prop`, and `update_params`.
 
 Please feel free to open an issue if anything you see in the repository is bad practice in terms of rust, or if you see any areas of improvement!
