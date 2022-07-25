@@ -1,5 +1,5 @@
 [package]
-name = "mnist_recognition"
+name = "rustnist"
 version = "0.1.0"
 edition = "2021"
 
