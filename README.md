@@ -5,7 +5,7 @@ This project, rustnist, takes inspiration from the following video: https://yout
 1. The video and the corresponding kaggle notebook do not correctly implement a neural network that can classify the mnist dataset, and most likely serve as a "demonstration" of the creators machine learning prowess for those who won’t take the time to run the code
 2. This would be a unique opportunity to further my understanding of both machine learning fundamentals and rust fundamentals
 
-After realizing those two things my new goal became learning and implementing a simple neural network from scratch, and to accomplish this I rewrote most algorithms in the network and made the program more modular. I found this process to be highly rewarding, as it forced me to understand each and every component of my simple one-layer network. This allowed me to learn quite a few things, notably:
+After realizing those two things, my new goal became learning and implementing a simple neural network from scratch, and to accomplish this I rewrote most algorithms in the network and made the program more modular. I found this process to be highly rewarding, as it forced me to understand each and every component of my simple one-layer network. This allowed me to learn quite a few things, notably:
 - The implementation of softmax and its uses
 - The implementation of ReLU and Leaky ReLU 
 - Weight initialization best practices for different activation functions
